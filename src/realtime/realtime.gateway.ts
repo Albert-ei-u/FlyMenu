@@ -11,10 +11,11 @@ import { Server } from 'socket.io';
     origin: true,
     credentials: true,
   },
-  
+
 })
 export class RealtimeGateway {
   @WebSocketServer()
+  
   server!: Server;
 
   emitOrderUpdate(payload: unknown) {
