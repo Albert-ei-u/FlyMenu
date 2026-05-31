@@ -95,10 +95,54 @@ export class AuthService {
       create: { userId: user.id, tokenHash: hashToken(rawToken, secret), expiresAt },
     });
 
+    const resetHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:#0f172a;padding:32px 40px;text-align:center;">
+            <h1 style="color:#f97316;margin:0;font-size:28px;letter-spacing:-1px;">FlyMenu</h1>
+            <p style="color:#94a3b8;margin:8px 0 0;font-size:14px;">Restaurant Management Platform</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px;">
+            <h2 style="color:#0f172a;margin:0 0 16px;font-size:22px;">Password Reset Request</h2>
+            <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 24px;">
+              We received a request to reset the password for your FlyMenu account.
+              Use the token below to complete the reset. It expires in <strong>${ttlMinutes} minutes</strong>.
+            </p>
+            <div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:8px;padding:20px;text-align:center;margin:0 0 24px;">
+              <p style="color:#64748b;font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Your Reset Token</p>
+              <code style="color:#0f172a;font-size:22px;font-weight:bold;letter-spacing:3px;word-break:break-all;">${rawToken}</code>
+            </div>
+            <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">
+              If you did not request a password reset, you can safely ignore this email.
+              Your password will not be changed.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #e2e8f0;">
+            <p style="color:#94a3b8;font-size:12px;margin:0;">
+              &copy; ${new Date().getFullYear()} FlyMenu &middot; This is an automated message, please do not reply.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
     await this.email.send({
       to: email,
       subject: 'Reset your FlyMenu password',
-      html: `<p>Use this token to reset your FlyMenu password: <strong>${rawToken}</strong></p>`,
+      html: resetHtml,
     });
     return { message: 'If that email exists, a reset link has been sent.' };
   }
