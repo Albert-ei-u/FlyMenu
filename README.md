@@ -1,203 +1,363 @@
 # FlyMenu Backend API
 
-Welcome to the backend engine of **FlyMenu**, a modern, real-time restaurant management platform. This API is built on **NestJS** and utilizes **Prisma ORM** with **PostgreSQL** to power dining applications, restaurant administrator dashboards, and super-admin platform controls.
+Welcome to the backend engine of **FlyMenu**, a modern, real-time restaurant management platform. This API is built on **NestJS** and uses **Prisma ORM** with **PostgreSQL** to power dining applications, restaurant admin dashboards, and super-admin platform controls.
 
 ---
 
-## 🚀 Technology Stack
+## Technology Stack
 
-- **Framework**: [NestJS](https://nestjs.com/) (TypeScript-first Node.js framework)
-- **Database ORM**: [Prisma](https://www.prisma.io/)
-- **Database Engine**: [PostgreSQL](https://www.postgresql.org/) (Installed locally)
-- **Real-time Engine**: [Socket.io](https://socket.io/) (WebSockets abstraction layer)
-- **File Uploads**: [Multer](https://github.com/expressjs/multer) (Stored locally under `/uploads`)
-- **Validation**: [class-validator](https://github.com/typestack/class-validator) & [class-transformer](https://github.com/typestack/class-transformer)
+| Layer | Technology |
+|---|---|
+| Framework | NestJS (TypeScript) |
+| Database ORM | Prisma |
+| Database Engine | PostgreSQL (local) |
+| Real-time | Socket.io (WebSockets) |
+| File Uploads | Multer (local /uploads) |
+| Validation | class-validator + class-transformer |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
-```txt
+```
 backend/
 ├── prisma/
-│   ├── schema.prisma   # Database schema definitions and relations
-│   ├── seed.js         # Script to populate mock database entries
-│   └── migrations/     # Generated SQL migration history files
+│   ├── schema.prisma        # All database models and relations
+│   ├── seed.js              # Mock data seeder
+│   └── migrations/          # SQL migration history
 ├── src/
-│   ├── main.ts         # NestJS bootstrap file (configures CORS, validation, static directories)
-│   ├── app.module.ts   # Root module linking all platform components
-│   ├── app.controller.ts # Root health controller
-│   ├── common/         # Shared utilities (JWT Guards, password crypt, slug helpers, CSV exporter)
-│   ├── integrations/   # Third-party integrations
-│   │   ├── email/      # Email service (supports signup/password reset)
-│   │   └── storage/    # Multer file uploading configurations
-│   ├── realtime/       # Socket.io gateways for real-time orders & notification flows
-│   └── modules/        # Domain-driven features
-│       ├── auth/       # Registration, JWT token signing, password reset
-│       ├── users/      # Platform identities, roles, and status
-│       ├── restaurants/# Restaurant profiles, discoverability, services, and capacity
-│       ├── menu/       # Menu Categories and Menu Items (tags, allergens, and nutrition)
-│       ├── orders/     # Order placement, kitchen flow statuses, and tracking events
-│       ├── reservations/# Table bookings, availability checks, confirmation QR codes
-│       ├── staff/      # Employee directories, active status, efficiency tracking
-│       ├── clients/     # Customer spend history, loyalty tiers, and visit metrics
-│       ├── operations/ # Kitchen board load, operational incidents, and resolutions
-│       ├── notifications/# In-app alerts, read tracking, and real-time dispatch
-│       ├── analytics/  # Sales metrics, period snapshots, and revenue streams
-│       ├── platform/   # Super-admin portal metrics and application approvals
-│       ├── settings/   # Restaurant configuration (notification preferences, links)
-│       └── media/      # Media Asset registry database tracker
+│   ├── main.ts              # App bootstrap (CORS, validation, static files)
+│   ├── app.module.ts        # Root module wiring all features
+│   ├── common/              # Guards, password hashing, slug helpers, CSV utils
+│   ├── integrations/
+│   │   ├── email/           # Email service for password reset
+│   │   └── storage/         # Multer disk storage configuration
+│   ├── realtime/            # Socket.io gateway for orders and notifications
+│   └── modules/
+│       ├── auth/            # Registration, JWT signing, password reset
+│       ├── users/           # User identities, roles, status
+│       ├── restaurants/     # Restaurant profiles and discoverability
+│       ├── restaurant-applications/  # Partner onboarding and approvals
+│       ├── menu/            # Categories, items, allergens, nutrition
+│       ├── orders/          # Order placement, kitchen statuses, tracking
+│       ├── reservations/    # Table bookings, availability, QR codes
+│       ├── customers/       # Customer accounts and profiles
+│       ├── clients/         # CRM per restaurant (spend, visits, loyalty)
+│       ├── staff/           # Employee directory, efficiency tracking
+│       ├── operations/      # Kitchen load, incidents, resolutions
+│       ├── notifications/   # In-app alerts with real-time push
+│       ├── analytics/       # Sales metrics and revenue snapshots
+│       ├── platform/        # Super-admin dashboards and system status
+│       ├── settings/        # Restaurant notification and profile settings
+│       ├── media/           # Media asset registry (Multer uploads)
+│       ├── tables/          # Restaurant table management
+│       ├── favorites/       # Customer saved restaurants
+│       └── reviews/         # Customer ratings and feedback
 ```
 
 ---
 
-## ⚙️ Environment Configuration
+## Environment Configuration
 
-Create a `.env` file in the root of the `backend/` directory. Example setup:
+Copy the example file and fill in your local values:
+
+```
+cp .env.example .env
+```
+
+Key variables in `.env`:
 
 ```env
 NODE_ENV=development
 PORT=4000
 API_PREFIX=api/v1
 
-# Database Connection (Replace with your actual local username/password)
-DATABASE_URL="postgresql://postgres:Uwumuremyi2009!@localhost:5432/flymenu?schema=public"
+# PostgreSQL connection
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/flymenu?schema=public"
 
-# Auth Tokens
+# JWT
 JWT_SECRET="change-me-in-development"
 JWT_EXPIRES_IN="1d"
 PASSWORD_RESET_TOKEN_TTL_MINUTES=30
 
-# File Upload Configuration
+# File uploads (local Multer)
 UPLOADS_DIR=uploads
 PUBLIC_UPLOADS_PATH=/uploads
 
-# Email Settings
+# Email (for password reset)
 EMAIL_FROM=your-email@example.com
 ```
 
 ---
 
-## 🛠️ Installation & Setup
+## Local Setup
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+**1. Install dependencies**
 
-2. **Generate Prisma Client**:
-   ```bash
-   npx prisma generate
-   ```
+```bash
+npm install
+```
 
-3. **Run Database Migrations**:
-   Run this command to create/sync all PostgreSQL tables in your local database:
-   ```bash
-   npx prisma migrate dev --name init
-   ```
+**2. Generate Prisma Client**
 
-4. **Seed Mock Database**:
-   Populate the database with initial restaurants, menu items, users, orders, bookings, and platform activity logs:
-   ```bash
-   npm run db:seed
-   ```
+```bash
+npx prisma generate
+```
 
-5. **Start Dev Server**:
-   ```bash
-   npm run start:dev
-   ```
-   The API will start running at `http://localhost:4000/api/v1`.
+**3. Create the flymenu database in PostgreSQL**
 
----
+Using psql:
 
-## 📖 API Endpoint Reference
+```sql
+CREATE DATABASE flymenu;
+```
 
-### 🔐 Authentication (`/auth`)
-- `POST /auth/signup` - Register a new customer or restaurant owner.
-- `POST /auth/login` - Authenticate and retrieve a signed JWT token.
-- `POST /auth/password-reset/request` - Send a reset token to user email.
-- `POST /auth/password-reset/confirm` - Update password using a valid token.
-- `GET /auth/me` - Get current authenticated user profile details.
+Or use pgAdmin to create a database named `flymenu`.
 
-### 🍽️ Restaurants (`/restaurants`)
-- `GET /restaurants` - Search, filter (cuisine, rating, city), and list active restaurants.
-- `GET /restaurants/featured` - Get top-rated restaurants.
-- `GET /restaurants/trending` - Get popular restaurants by order volume.
-- `GET /restaurants/categories` - Fetch categories across all restaurants.
-- `GET /restaurants/:id` - Fetch restaurant profile with menu categories, items, and settings.
-- `POST /restaurants` - Create a restaurant profile (restaurant owner dashboard).
-- `PATCH /restaurants/:id` - Update operating details and parameters.
+**4. Run database migrations**
 
-### 📜 Menu & Categories (`/menu`)
-- `GET /menu/categories` - List categories including their menu items.
-- `POST /menu/categories` - Create a new menu category (starters, mains).
-- `GET /menu/items` - Retrieve menu items.
-- `POST /menu/items` - Create a menu item with nutrition info, allergens, and highlighted tag.
-- `PATCH /menu/items/:id` - Update menu item details, status, or availability.
+```bash
+npx prisma migrate dev --name init
+```
 
-### 📅 Bookings & Reservations (`/reservations`)
-- `GET /reservations/availability` - Query open table time slots by party size and date.
-- `POST /reservations` - Create a new table booking (generates confirmation numbers & mock QR codes).
-- `GET /reservations/:id` - Get specific booking summary details.
-- `PATCH /reservations/:id/cancel` - Cancel a scheduled reservation.
+**5. Seed mock data**
 
-### 📦 Orders (`/orders`)
-- `GET /orders` - Fetch all orders (filters for restaurant dashboards).
-- `POST /orders` - Place a new order with items and fulfillment type (`PICKUP` or `DINE_IN`).
-- `GET /orders/:id` - Fetch specific order summary and detailed tracking event logs.
-- `PATCH /orders/:id/status` - Update cooking/order status (`PENDING`, `CONFIRMED`, `PREPARING`, `READY`, `COMPLETED`, `CANCELLED`). *Emits real-time updates.*
-- `GET /orders/export/csv` - Download order records in CSV format.
+```bash
+npm run db:seed
+```
 
-### 👥 Staff Management (`/staff`)
-- `GET /staff` - List employees at a restaurant.
-- `POST /staff` - Onboard a new staff member (employee code, role, status).
-- `PATCH /staff/:id` - Update employee details, tracked efficiency, and working hours.
+**6. Start the development server**
 
-### 📁 Clients / CRM (`/clients`)
-- `GET /clients` - Browse a restaurant's client directory showing loyalty tiers and spend analytics.
-- `POST /clients` - Create/register a new client card manually.
-- `PATCH /clients/:id` - Update client information or modify loyalty levels.
+```bash
+npm run start:dev
+```
 
-### ⚠️ Operational Incidents (`/operations`)
-- `GET /operations` - View operational dashboards, active ticket count, and live status.
-- `POST /operations/incidents` - Log a service incident (severity levels: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
-- `PATCH /operations/incidents/:id/resolve` - Mark a logged incident as resolved.
-
-### 📁 Media uploads (`/media`)
-- `POST /media/upload` - Upload images (restaurant cover, profile picture, menu photos) using Multer. Files are served statically from `/uploads`.
-
-### ⚙️ Restaurant Settings (`/settings`)
-- `GET /settings/:restaurantId` - Get settings (notifications preferences, active integrations).
-- `PATCH /settings/:restaurantId` - Update notifications and metadata.
-
-### 👑 Platform Operations (Super Admin) (`/platform`)
-- `GET /platform/dashboard` - Platform statistics (registered restaurants, pending queue, customer count, platform revenue).
-- `GET /platform/restaurants/export/csv` - Export full restaurant registries.
-- `GET /platform/customers/export/csv` - Export platform customer lists.
-- `GET /platform/revenue` - Fetch gross transaction logs and charts.
-- `GET /platform/activity` - Review system-wide admin audit logs.
-- `GET /platform/system-status` - Check server health and operational incidents.
+The API runs at: `http://localhost:4000/api/v1`
 
 ---
 
-## ⚡ Real-time Event System (Socket.io)
+## Available Scripts
 
-Real-time coordination is facilitated through a WebSocket server listening at:
-`ws://localhost:4000/realtime`
-
-### Emitted Events (Server -> Client)
-- **`orderUpdate`**: Sent to clients listening for status changes on a specific order.
-  - Payload: `{ id: string, status: OrderStatus, order: Order }`
-- **`notification`**: Dispatched to logged-in users whenever in-app alerts are created.
-  - Payload: `{ id: string, type: NotificationType, title: string, body: string, actionUrl: string }`
+| Script | Description |
+|---|---|
+| `npm run start:dev` | Start dev server in watch mode |
+| `npm run build` | Compile TypeScript to dist/ |
+| `npm run start` | Start compiled production build |
+| `npm run prisma:generate` | Re-generate Prisma Client |
+| `npm run prisma:migrate` | Run pending migrations |
+| `npm run prisma:studio` | Open Prisma Studio at localhost:5555 |
+| `npm run db:seed` | Seed the database with mock data |
 
 ---
 
-## 🛢️ Schema Utilities
-- **Prisma Studio**: Spin up a local browser UI to query/manage database entries directly:
-  ```bash
-  npx prisma studio
-  ```
-  Prisma Studio will be available at `http://localhost:5555`.
-#   F l y M e n u  
- 
+## API Endpoint Reference
+
+Base URL: `http://localhost:4000/api/v1`
+
+### Authentication
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /auth/signup | Register a new account |
+| POST | /auth/login | Login and get JWT token |
+| POST | /auth/password-reset/request | Request password reset email |
+| POST | /auth/password-reset/confirm | Confirm reset with token |
+| GET | /auth/me | Get current authenticated user |
+
+### Restaurants
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /restaurants | Search and list active restaurants |
+| GET | /restaurants/featured | Top rated restaurants |
+| GET | /restaurants/trending | Most ordered from restaurants |
+| GET | /restaurants/categories | All menu category names |
+| GET | /restaurants/:id | Full restaurant profile |
+| POST | /restaurants | Create a new restaurant |
+| PATCH | /restaurants/:id | Update restaurant details |
+
+### Menu
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /menu/categories | List all categories with items |
+| POST | /menu/categories | Create a menu category |
+| GET | /menu/items | List all menu items |
+| POST | /menu/items | Create a new menu item |
+| PATCH | /menu/items/:id | Update menu item details |
+
+### Orders
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /orders | List all orders |
+| POST | /orders | Place a new order |
+| GET | /orders/:id | Get order with tracking events |
+| PATCH | /orders/:id/status | Update order status (emits real-time event) |
+| GET | /orders/export/csv | Export orders as CSV |
+
+### Reservations
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /reservations/availability | Check available tables by date and party size |
+| POST | /reservations | Create a new booking |
+| GET | /reservations/:id | Get booking details |
+| PATCH | /reservations/:id/cancel | Cancel a reservation |
+
+### Restaurant Applications
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /restaurant-applications | List all applications |
+| POST | /restaurant-applications | Submit a new application |
+| GET | /restaurant-applications/:id | Get application details |
+| POST | /restaurant-applications/:id/approve | Approve an application |
+| POST | /restaurant-applications/:id/reject | Reject an application |
+| POST | /restaurant-applications/:id/request-info | Request more info |
+| POST | /restaurant-applications/:id/documents | Attach a document |
+
+### Staff
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /staff | List all staff members |
+| POST | /staff | Add a new staff member |
+| PATCH | /staff/:id | Update staff details |
+
+### Clients / CRM
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /clients | List restaurant client profiles |
+| POST | /clients | Create a new client |
+| GET | /clients/:id | Get client profile |
+| PATCH | /clients/:id | Update client details |
+
+### Operations
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /operations | Dashboard: tickets, incidents |
+| POST | /operations/incidents | Log a new incident |
+| PATCH | /operations/incidents/:id/resolve | Resolve an incident |
+
+### Notifications
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /notifications | List all notifications |
+| POST | /notifications | Create and push a notification |
+
+### Analytics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /analytics | Dashboard metrics |
+| GET | /analytics/snapshots | Historical metric snapshots |
+
+### Platform (Super Admin)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /platform/dashboard | Platform-wide statistics |
+| GET | /platform/restaurants | All restaurants |
+| GET | /platform/restaurants/export/csv | Export restaurants as CSV |
+| GET | /platform/customers | All customers |
+| GET | /platform/customers/export/csv | Export customers as CSV |
+| GET | /platform/revenue | Revenue and transaction logs |
+| GET | /platform/revenue/export/csv | Export revenue as CSV |
+| GET | /platform/activity | System audit log |
+| GET | /platform/system-status | Server and incident health check |
+
+### Settings
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /settings/:restaurantId | Get restaurant settings |
+| PATCH | /settings/:restaurantId | Update settings |
+
+### Media
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /media/upload | Upload a file (image/document) |
+
+Uploaded files are served statically at: `http://localhost:4000/uploads/`
+
+### Tables
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /tables | List all tables |
+| POST | /tables | Create a table |
+| GET | /tables/:id | Get table details |
+| PATCH | /tables/:id | Update table |
+| PATCH | /tables/:id/deactivate | Deactivate a table |
+
+### Reviews
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /reviews | List reviews |
+| POST | /reviews | Submit a review (also updates restaurant rating) |
+
+### Favorites
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | /favorites | List user favorites |
+| POST | /favorites | Add a restaurant to favorites |
+| DELETE | /favorites/:id | Remove from favorites |
+
+---
+
+## Real-time Events (Socket.io)
+
+WebSocket server: `ws://localhost:4000/realtime`
+
+### Events emitted by server
+
+| Event | Trigger | Payload |
+|---|---|---|
+| `orderUpdate` | Order status changes | `{ id, status, order }` |
+| `notification` | New notification created | `{ id, type, title, body, actionUrl }` |
+
+---
+
+## Seeded Demo Accounts
+
+After running `npm run db:seed`, these accounts are available:
+
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | admin@flymenu.local | Password123! |
+| Restaurant Owner | owner@obsidiangrill.local | Password123! |
+| Customer | sarah@flymenu.local | Password123! |
+
+---
+
+## Phase 1 Modules
+
+Included in this release:
+
+- Auth, Users, Restaurants, Restaurant Applications
+- Menu, Orders, Reservations, Tables
+- Customers, Clients, Staff
+- Operations, Notifications, Analytics
+- Platform (Super Admin), Media, Settings
+- Email integration (password reset)
+- Socket.io real-time (orders and notifications)
+
+## Phase 2 (Planned)
+
+- Payments and Checkout
+- Promo Codes and Loyalty
+- Courier and Fleet Management
+- Staff Shifts and Roster
+- Inventory Tracking
+- Customer Support Ticketing
+- Payouts and Financial Reporting
+- Background Jobs and Queues
+- SMS Integrations
+- Cloudinary / S3 Media Storage
