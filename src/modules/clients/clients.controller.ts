@@ -39,4 +39,3 @@ export class ClientsController {
     return this.clientsService.update(id, body);
   }
 }
-
