@@ -31,3 +31,10 @@ export function createOpaqueToken() {
 export function hashToken(token: string, secret: string) {
   return createHmac('sha256', secret).update(token).digest('hex');
 }
+
+/** Generate a cryptographically random 6-digit OTP string. */
+export function createOtpCode(): string {
+  // Generates a number between 100000 and 999999
+  const bytes = randomBytes(4).readUInt32BE(0);
+  return String(100_000 + (bytes % 900_000));
+}

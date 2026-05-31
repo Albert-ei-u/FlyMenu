@@ -4,7 +4,9 @@ import { AuthService } from './auth.service';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { SignupDto } from './dto/signup.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -18,25 +20,59 @@ export class AuthController {
   }
 
   @Post('signup')
-  @ApiOperation({ summary: 'Sign up', description: 'Register a new user account. A customer profile is created automatically.' })
-  @ApiResponse({ status: 201, description: 'Account created. Returns user details and a signed JWT access token.' })
+  @ApiOperation({
+    summary: 'Sign up',
+    description:
+      'Register a new user account. A 6-digit verification code is sent to the provided email. ' +
+      'The account must be verified via POST /auth/verify-email before login is allowed.',
+  })
+  @ApiResponse({ status: 201, description: 'Account created. Verification code sent to email.' })
   @ApiResponse({ status: 409, description: 'An account with this email already exists.' })
   signup(@Body() body: SignupDto) {
     return this.authService.signup(body);
   }
 
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify email',
+    description: 'Submit the 6-digit code received by email to verify the account. Returns a JWT on success.',
+  })
+  @ApiResponse({ status: 200, description: 'Email verified. Returns user details and access token.' })
+  @ApiResponse({ status: 400, description: 'Email already verified.' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired verification code.' })
+  @ApiResponse({ status: 404, description: 'No account found with that email.' })
+  verifyEmail(@Body() body: VerifyEmailDto) {
+    return this.authService.verifyEmail(body);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Resend verification code',
+    description: 'Request a fresh 6-digit verification code if the previous one expired.',
+  })
+  @ApiResponse({ status: 200, description: 'New code sent (or generic message if email not found).' })
+  @ApiResponse({ status: 400, description: 'Email is already verified.' })
+  resendVerification(@Body() body: ResendVerificationDto) {
+    return this.authService.resendVerificationCode(body.email);
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Log in', description: 'Authenticate with email and password. Returns a signed JWT access token.' })
+  @ApiOperation({
+    summary: 'Log in',
+    description: 'Authenticate with email and password. Email must be verified first.',
+  })
   @ApiResponse({ status: 200, description: 'Login successful. Returns user profile and access token.' })
-  @ApiResponse({ status: 401, description: 'Invalid email or password.' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials or email not yet verified.' })
   login(@Body() body: LoginDto) {
     return this.authService.login(body);
   }
 
   @Post('password-reset/request')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Request password reset', description: 'Send a password reset token to the provided email address.' })
+  @ApiOperation({ summary: 'Request password reset', description: 'Send a password reset token to the provided email address. Email must be verified.' })
   @ApiResponse({ status: 200, description: 'Reset email sent (returns generic message regardless of email existence).' })
   requestPasswordReset(@Body() body: RequestPasswordResetDto) {
     return this.authService.requestPasswordReset(body.email);
@@ -51,4 +87,3 @@ export class AuthController {
     return this.authService.confirmPasswordReset(body);
   }
 }
-

@@ -127,6 +127,8 @@ model User {
   role               UserRole            @default(CUSTOMER)
   status             UserStatus          @default(ACTIVE)
   twoFactorEnabled   Boolean             @default(false)
+  emailVerified      Boolean             @default(false)
+  emailVerifiedAt    DateTime?
   lastLoginAt        DateTime?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
@@ -137,9 +139,10 @@ model User {
   reservations       Reservation[]
   notifications      Notification[]
   reviews            Review[]
-  favoriteRestaurants FavoriteRestaurant[]
-  passwordResetToken PasswordResetToken?
-  activityLogs       ActivityLog[]
+  favoriteRestaurants    FavoriteRestaurant[]
+  passwordResetToken     PasswordResetToken?
+  emailVerificationToken EmailVerificationToken?
+  activityLogs           ActivityLog[]
 }
 
 model PasswordResetToken {
@@ -149,6 +152,15 @@ model PasswordResetToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
 }
 
