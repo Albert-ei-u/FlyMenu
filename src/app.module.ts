@@ -45,7 +45,6 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     OperationsModule,
     NotificationsModule,
     AnalyticsModule,
-    
     PlatformModule,
     MediaModule,
     SettingsModule,
