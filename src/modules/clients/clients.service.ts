@@ -45,7 +45,7 @@ export class ClientsService {
           },
         },
       },
-      
+
       select: {
         id: true,
         fullName: true,
@@ -71,6 +71,7 @@ export class ClientsService {
         fullName: body.fullName,
         email: body.email,
         phone: body.phone,
+        
         customerProfile: {
           update: {
             loyaltyTier: body.loyaltyTier,

@@ -37,6 +37,7 @@ export class ClientsController {
   @ApiParam({ name: 'id', description: 'Client ID (CUID).' })
   update(@Param('id') id: string, @Body() body: Partial<CreateClientDto>) {
     return this.clientsService.update(id, body);
+    
   }
 }
 
