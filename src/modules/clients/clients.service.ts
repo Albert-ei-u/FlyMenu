@@ -45,6 +45,7 @@ export class ClientsService {
           },
         },
       },
+      
       select: {
         id: true,
         fullName: true,
