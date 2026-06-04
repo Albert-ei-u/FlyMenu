@@ -17,11 +17,12 @@ export class ClientsService {
   async findAll(user?: CurrentUser) {
     const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
     
-    
+
     const where = restaurantId ? {
 
       restaurants: {
         some: {
+          
 
           restaurantId: restaurantId
         }
