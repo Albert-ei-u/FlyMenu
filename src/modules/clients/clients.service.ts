@@ -18,6 +18,7 @@ export class ClientsService {
     const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
     
     const where = restaurantId ? {
+      
       restaurants: {
         some: {
           restaurantId: restaurantId
