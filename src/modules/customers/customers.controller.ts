@@ -16,10 +16,9 @@ export class CustomersController {
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'List all customers', description: 'Retrieve all customer platform profiles.' })
   findAll() {
-
+    
     return this.customersService.findAll();
   }
-  
 
   @Get(':id')
   @ApiOperation({ summary: 'Get customer profile', description: 'Fetch personal details, contact info, and profile info for a customer.' })
