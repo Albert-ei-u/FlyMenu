@@ -19,7 +19,6 @@ export class CustomersController {
 
     return this.customersService.findAll();
   }
-
   
 
   @Get(':id')
