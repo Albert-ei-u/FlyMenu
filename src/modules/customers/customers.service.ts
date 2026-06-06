@@ -39,6 +39,7 @@ export class CustomersService {
         trackingEvents: { orderBy: { createdAt: 'asc' } },
       },
     });
+    
   }
 
   async reservations(id: string) {
