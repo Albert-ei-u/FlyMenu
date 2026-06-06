@@ -20,7 +20,7 @@ export class CustomersController {
     return this.customersService.findAll();
   }
 
-  
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Get customer profile', description: 'Fetch personal details, contact info, and profile info for a customer.' })
@@ -42,6 +42,7 @@ export class CustomersController {
   reservations(@Param('id') id: string) {
     return this.customersService.reservations(id);
   }
+  
 
   @Get(':id/favorites')
   @ApiOperation({ summary: 'Get customer favorites', description: 'Fetch all favorited restaurants for this customer.' })
