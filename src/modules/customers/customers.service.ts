@@ -25,7 +25,6 @@ export class CustomersService {
         restaurants: { include: { restaurant: true } },
       },
     });
-    
   }
 
   async orders(id: string) {
