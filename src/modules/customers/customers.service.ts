@@ -32,7 +32,6 @@ export class CustomersService {
 
     return this.prisma.order.findMany({
       where: { customerId: profile.userId },
-      
       orderBy: { createdAt: 'desc' },
       include: {
         restaurant: { select: { id: true, name: true, cuisine: true } },
