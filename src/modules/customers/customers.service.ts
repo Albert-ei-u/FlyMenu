@@ -25,8 +25,9 @@ export class CustomersService {
         restaurants: { include: { restaurant: true } },
       },
     });
-
+    
   }
+
   async orders(id: string) {
     const profile = await this.prisma.customerProfile.findUniqueOrThrow({ where: { id } });
 
