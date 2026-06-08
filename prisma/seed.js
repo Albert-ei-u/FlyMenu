@@ -74,6 +74,7 @@ async function main() {
     update: { ownerId: owner.id },
     create: {
       ownerId: owner.id,
+      
       name: 'The Obsidian Grill',
       slug: 'the-obsidian-grill',
       businessType: 'Restaurant',
