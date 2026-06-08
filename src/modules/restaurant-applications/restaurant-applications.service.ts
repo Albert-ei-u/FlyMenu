@@ -51,6 +51,13 @@ export class RestaurantApplicationsService {
       include: { documents: true, restaurant: true },
     });
 
+    if (decision === 'approve' && application.restaurantId) {
+      await this.prisma.restaurant.update({
+        where: { id: application.restaurantId },
+        data: { status: 'ACTIVE' },
+      });
+    }
+
     await this.prisma.activityLog.create({
       data: {
         action: `restaurant_application.${decision}`,

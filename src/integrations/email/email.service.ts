@@ -8,6 +8,7 @@ export type SendEmailInput = {
   subject: string;
   html: string;
   text?: string;
+  attachments?: any[];
 };
 
 @Injectable()
@@ -33,8 +34,12 @@ export class EmailService implements OnModuleInit {
           pass: smtpPass,
         },
       });
-      await this.transporter.verify();
-      this.logger.log(`✅ Email service ready → SMTP (${this.config.get('SMTP_HOST')}:${this.config.get('SMTP_PORT')})`);
+      try {
+        await this.transporter.verify();
+        this.logger.log(`✅ Email service ready → SMTP (${this.config.get('SMTP_HOST')}:${this.config.get('SMTP_PORT')})`);
+      } catch (err: any) {
+        this.logger.error(`❌ SMTP verification failed: ${err.message}. Email delivery may not work.`);
+      }
     } else {
       // Auto-generate Ethereal test account for local dev
       this.isEthereal = true;
@@ -62,6 +67,7 @@ export class EmailService implements OnModuleInit {
       subject: input.subject,
       html: input.html,
       text: input.text ?? input.html.replace(/<[^>]*>/g, ''),
+      attachments: input.attachments,
     });
 
     if (this.isEthereal) {

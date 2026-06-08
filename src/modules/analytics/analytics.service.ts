@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { moduleStatus } from '../../common/module-status';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CurrentUser } from '../../common/auth/current-user';
 
 @Injectable()
 export class AnalyticsService {
@@ -10,8 +11,23 @@ export class AnalyticsService {
     return moduleStatus('analytics', 'Dashboard metrics, sales trends, popular items, customer growth, and platform revenue snapshots.');
   }
 
-  async dashboard(restaurantId?: string) {
-    const orderFilter = restaurantId ? { restaurantId } : {};
+  async dashboard(user?: CurrentUser, restaurantId?: string) {
+    let targetRestaurantId = restaurantId;
+
+    if (user && user.role === 'RESTAURANT_OWNER' && !restaurantId) {
+      const owned = await this.prisma.restaurant.findFirst({
+        where: { ownerId: user.sub },
+        select: { id: true },
+      });
+      if (owned) {
+        targetRestaurantId = owned.id;
+      } else {
+        // Owner has no restaurant created yet
+        return { salesTotal: 0, totalOrders: 0, totalCustomers: 0, totalRestaurants: 0, recentOrders: [] };
+      }
+    }
+
+    const orderFilter = targetRestaurantId ? { restaurantId: targetRestaurantId } : {};
     const [orders, customers, restaurants, recentOrders] = await Promise.all([
       this.prisma.order.aggregate({
         where: orderFilter,
@@ -19,12 +35,15 @@ export class AnalyticsService {
         _sum: { total: true },
       }),
       this.prisma.customerProfile.count(),
-      this.prisma.restaurant.count({ where: restaurantId ? { id: restaurantId } : undefined }),
+      this.prisma.restaurant.count({ where: targetRestaurantId ? { id: targetRestaurantId } : undefined }),
       this.prisma.order.findMany({
         where: orderFilter,
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: { items: true },
+        include: {
+          items: true,
+          customer: { select: { fullName: true, email: true } },
+        },
       }),
     ]);
 

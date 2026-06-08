@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { ReservationsService } from './reservations.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Reservations')
 @Controller('reservations')
@@ -13,6 +16,14 @@ export class ReservationsController {
   @ApiOperation({ summary: 'Module status' })
   status() {
     return this.reservationsService.status();
+  }
+
+  @Get('list')
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'List reservations', description: 'Retrieve all reservations, filtered by restaurant for owners, or all for super-admins.' })
+  findAll(@CurrentUser() user: CurrentUserType) {
+    return this.reservationsService.findAll(user);
   }
 
   @Get('availability')

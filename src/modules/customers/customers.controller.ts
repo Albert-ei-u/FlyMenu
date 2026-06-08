@@ -1,13 +1,19 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { RolesGuard } from '../../common/auth/roles.guard';
+import { Roles } from '../../common/auth/roles.decorator';
 
 @ApiTags('Customers')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard, RolesGuard)
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get()
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'List all customers', description: 'Retrieve all customer platform profiles.' })
   findAll() {
     return this.customersService.findAll();

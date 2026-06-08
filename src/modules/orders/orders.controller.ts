@@ -1,25 +1,30 @@
-import { Body, Controller, Get, Header, Param, Patch, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Header, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrdersService } from './orders.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Orders')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
   @ApiOperation({ summary: 'List all orders', description: 'Retrieve all orders across all restaurants ordered by latest first.' })
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(@CurrentUser() user: CurrentUserType) {
+    return this.ordersService.findAll(user);
   }
 
   @Get('export/csv')
   @Header('Content-Type', 'text/csv')
   @Header('Content-Disposition', 'attachment; filename="orders.csv"')
   @ApiOperation({ summary: 'Export orders as CSV', description: 'Download all orders as a CSV file for reporting.' })
-  exportCsv() {
-    return this.ordersService.exportCsv();
+  exportCsv(@CurrentUser() user: CurrentUserType) {
+    return this.ordersService.exportCsv(user);
   }
 
   @Post()

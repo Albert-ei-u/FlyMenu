@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { moduleStatus } from '../../common/module-status';
 import { toSlug } from '../../common/slug';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { SearchRestaurantsDto } from './dto/search-restaurants.dto';
+import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { CurrentUser } from '../../common/auth/current-user';
 
 @Injectable()
 export class RestaurantsService {
@@ -11,6 +13,68 @@ export class RestaurantsService {
 
   status() {
     return moduleStatus('restaurants', 'Restaurant discovery profiles, operating details, services, capacity, and status.');
+  }
+
+  async findForUser(user: CurrentUser) {
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: { ownerId: user.sub },
+      include: {
+        owner: { select: { id: true, fullName: true, email: true } },
+        media: true,
+        categories: { include: { items: true } },
+        tables: true,
+        settings: true,
+        application: true,
+      },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('No restaurant found for this user.');
+    }
+
+    return restaurant;
+  }
+
+  async updateProfile(user: CurrentUser, body: UpdateRestaurantDto) {
+    const restaurant = await this.findForUser(user);
+
+    return this.prisma.restaurant.update({
+      where: { id: restaurant.id },
+      data: {
+        ...body,
+        slug: body.name ? toSlug(body.name) : undefined,
+      },
+    });
+  }
+
+  async requestApproval(user: CurrentUser) {
+    const restaurant = await this.findForUser(user);
+
+    if (restaurant.status === 'ACTIVE') {
+      throw new BadRequestException('Restaurant is already active.');
+    }
+
+    const existingApplication = await this.prisma.restaurantApplication.findFirst({
+      where: { restaurantId: restaurant.id, status: { in: ['NEW', 'MORE_INFO_REQUESTED'] } },
+    });
+
+    if (existingApplication) {
+      throw new BadRequestException('An approval request is already pending.');
+    }
+
+    return this.prisma.restaurantApplication.create({
+      data: {
+        restaurantId: restaurant.id,
+        applicantName: restaurant.owner.fullName,
+        applicantEmail: restaurant.owner.email,
+        restaurantName: restaurant.name,
+        category: restaurant.cuisine,
+        city: restaurant.city,
+        country: restaurant.country,
+        description: restaurant.shortDescription,
+        status: 'NEW',
+      },
+    });
   }
 
   findAll(query: SearchRestaurantsDto = {}) {
@@ -69,9 +133,14 @@ export class RestaurantsService {
     return categories;
   }
 
-  findOne(id: string) {
-    return this.prisma.restaurant.findUnique({
-      where: { id },
+  findOne(idOrSlug: string) {
+    return this.prisma.restaurant.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug },
+        ],
+      },
       include: {
         owner: { select: { id: true, fullName: true, email: true } },
         media: true,

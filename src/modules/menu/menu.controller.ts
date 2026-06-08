@@ -1,10 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
+import { AuthGuard } from '../../common/auth/auth.guard';
 import { CreateMenuCategoryDto } from './dto/create-menu-category.dto';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { MenuService } from './menu.service';
 
 @ApiTags('Menu')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('menu')
 export class MenuController {
   constructor(private readonly menuService: MenuService) {}
@@ -17,26 +22,26 @@ export class MenuController {
 
   @Post('categories')
   @ApiOperation({ summary: 'Create category', description: 'Create a menu category for a restaurant (e.g. Starters, Mains, Desserts).' })
-  createCategory(@Body() body: CreateMenuCategoryDto) {
-    return this.menuService.createCategory(body);
+  createCategory(@Body() body: CreateMenuCategoryDto, @CurrentUser() user: CurrentUserType) {
+    return this.menuService.createCategory(body, user);
   }
 
   @Get('categories')
   @ApiOperation({ summary: 'List categories', description: 'List all menu categories with their associated items.' })
-  listCategories() {
-    return this.menuService.listCategories();
+  listCategories(@CurrentUser() user: CurrentUserType) {
+    return this.menuService.listCategories(user);
   }
 
   @Post('items')
   @ApiOperation({ summary: 'Create menu item', description: 'Add a new menu item with price, nutrition, allergens, tags, and availability settings.' })
-  createItem(@Body() body: CreateMenuItemDto) {
-    return this.menuService.createItem(body);
+  createItem(@Body() body: CreateMenuItemDto, @CurrentUser() user: CurrentUserType) {
+    return this.menuService.createItem(body, user);
   }
 
   @Get('items')
-  @ApiOperation({ summary: 'List menu items', description: 'List all menu items across all restaurants.' })
-  listItems() {
-    return this.menuService.listItems();
+  @ApiOperation({ summary: 'List menu items', description: 'List all menu items for the current restaurant.' })
+  listItems(@CurrentUser() user: CurrentUserType) {
+    return this.menuService.listItems(user);
   }
 
   @Patch('items/:id')

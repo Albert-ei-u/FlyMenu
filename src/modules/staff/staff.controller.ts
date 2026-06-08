@@ -1,17 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateStaffMemberDto } from './dto/create-staff-member.dto';
 import { StaffService } from './staff.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Staff')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
   @Get()
   @ApiOperation({ summary: 'List staff', description: 'List all staff members across all restaurants.' })
-  findAll() {
-    return this.staffService.findAll();
+  findAll(@CurrentUser() user: CurrentUserType) {
+    return this.staffService.findAll(user);
   }
 
   @Post()

@@ -6,6 +6,8 @@ import { createOrderNumber } from '../../common/order-number';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CurrentUser } from '../../common/auth/current-user';
+import { getRestaurantIdForUser } from '../../common/auth/restaurant-id';
 
 @Injectable()
 export class OrdersService {
@@ -18,8 +20,12 @@ export class OrdersService {
     return moduleStatus('orders', 'Order creation, kitchen board statuses, tracking events, and live updates.');
   }
 
-  findAll() {
+  async findAll(user?: CurrentUser) {
+    const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
+    const where = restaurantId ? { restaurantId } : {};
+
     return this.prisma.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         restaurant: { select: { id: true, name: true } },
@@ -28,8 +34,12 @@ export class OrdersService {
     });
   }
 
-  async exportCsv() {
+  async exportCsv(user?: CurrentUser) {
+    const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
+    const where = restaurantId ? { restaurantId } : {};
+
     const orders = await this.prisma.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: { restaurant: { select: { name: true } } },
     });

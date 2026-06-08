@@ -17,38 +17,47 @@ async function main() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
 
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@flymenu.com';
+  const adminRawPassword = process.env.ADMIN_PASSWORD || 'Password123!';
+  
+  const adminPassword = await hashPassword(adminRawPassword);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@flymenu.local' },
-    update: {},
+    where: { email: adminEmail },
+    update: { role: 'SUPER_ADMIN', emailVerified: true, passwordHash: adminPassword },
     create: {
-      email: 'admin@flymenu.local',
+      email: adminEmail,
       fullName: 'Admin Root',
       role: 'SUPER_ADMIN',
-      passwordHash: await hashPassword('Password123!'),
+      passwordHash: adminPassword,
+      emailVerified: true,
     },
   });
 
+  const ownerPassword = await hashPassword('Password123!');
   const owner = await prisma.user.upsert({
-    where: { email: 'owner@obsidiangrill.local' },
-    update: {},
+    where: { email: 'uwumuremyialbert70@gmail.com' },
+    update: { role: 'RESTAURANT_OWNER', emailVerified: true, passwordHash: ownerPassword },
     create: {
-      email: 'owner@obsidiangrill.local',
+      email: 'uwumuremyialbert70@gmail.com',
       fullName: 'Marcus Thorne',
       phone: '+1 (555) 092-1283',
       role: 'RESTAURANT_OWNER',
-      passwordHash: await hashPassword('Password123!'),
+      passwordHash: ownerPassword,
+      emailVerified: true,
     },
   });
 
+  const customerPassword = await hashPassword('Password123!');
   const customer = await prisma.user.upsert({
-    where: { email: 'sarah@flymenu.local' },
-    update: {},
+    where: { email: 'scrutiqrecov@gmail.com' },
+    update: { role: 'CUSTOMER', emailVerified: true, passwordHash: customerPassword },
     create: {
-      email: 'sarah@flymenu.local',
+      email: 'scrutiqrecov@gmail.com',
       fullName: 'Sarah M.',
       phone: '+44 20 7946 0958',
       role: 'CUSTOMER',
-      passwordHash: await hashPassword('Password123!'),
+      passwordHash: customerPassword,
+      emailVerified: true,
       customerProfile: {
         create: {
           loyaltyTier: 'PLATINUM',
@@ -62,7 +71,7 @@ async function main() {
 
   const restaurant = await prisma.restaurant.upsert({
     where: { slug: 'the-obsidian-grill' },
-    update: {},
+    update: { ownerId: owner.id },
     create: {
       ownerId: owner.id,
       name: 'The Obsidian Grill',

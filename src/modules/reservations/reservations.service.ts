@@ -4,6 +4,8 @@ import { createConfirmationNumber } from '../../common/order-number';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateReservationDto } from './dto/create-reservation.dto';
+import { CurrentUser } from '../../common/auth/current-user';
+import { getRestaurantIdForUser } from '../../common/auth/restaurant-id';
 
 @Injectable()
 export class ReservationsService {
@@ -11,6 +13,20 @@ export class ReservationsService {
 
   status() {
     return moduleStatus('reservations', 'Bookings, table selection, party size, special requests, confirmation numbers, and QR codes.');
+  }
+
+  async findAll(user?: CurrentUser) {
+    const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
+    const where = restaurantId ? { restaurantId } : {};
+
+    return this.prisma.reservation.findMany({
+      where,
+      orderBy: { reservationDate: 'desc' },
+      include: {
+        restaurant: { select: { id: true, name: true } },
+        table: { select: { id: true, code: true } },
+      },
+    });
   }
 
   async availability(query: CheckAvailabilityDto) {

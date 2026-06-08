@@ -2,14 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
+import { CurrentUser } from '../../common/auth/current-user';
+import { getRestaurantIdForUser } from '../../common/auth/restaurant-id';
 
 @Injectable()
 export class TablesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll(restaurantId?: string) {
+  async findAll(user?: CurrentUser, restaurantId?: string) {
+    const effectiveRestaurantId = restaurantId ?? (user ? await getRestaurantIdForUser(this.prisma, user) : undefined);
+    const where = effectiveRestaurantId ? { restaurantId: effectiveRestaurantId } : {};
+
     return this.prisma.restaurantTable.findMany({
-      where: restaurantId ? { restaurantId } : undefined,
+      where,
       orderBy: [{ code: 'asc' }],
       include: {
         restaurant: {

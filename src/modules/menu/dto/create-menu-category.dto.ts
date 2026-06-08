@@ -2,9 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
 export class CreateMenuCategoryDto {
-  @ApiProperty({ example: 'cuid1234restaurant', description: 'Associated restaurant ID.' })
+  @ApiPropertyOptional({ example: 'cuid1234restaurant', description: 'Associated restaurant ID.' })
+  @IsOptional()
   @IsString()
-  restaurantId!: string;
+  restaurantId?: string;
 
   @ApiProperty({ example: 'Starters', description: 'Name of the menu category (e.g. Starters, Main Course, Drinks).' })
   @IsString()

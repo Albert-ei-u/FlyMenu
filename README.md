@@ -331,7 +331,7 @@ After running `npm run db:seed`, these accounts are available:
 
 | Role | Email | Password |
 |---|---|---|
-| Super Admin | admin@flymenu.local | Password123! |
+| Super Admin | admin@flymenu.com | Password123! |
 | Restaurant Owner | owner@obsidiangrill.local | Password123! |
 | Customer | sarah@flymenu.local | Password123! |
 

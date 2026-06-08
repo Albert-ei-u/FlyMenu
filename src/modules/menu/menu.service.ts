@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { moduleStatus } from '../../common/module-status';
 import { toSlug } from '../../common/slug';
+import { CurrentUser } from '../../common/auth/current-user';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMenuCategoryDto } from './dto/create-menu-category.dto';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { getRestaurantIdForUser } from '../../common/auth/restaurant-id';
 
 @Injectable()
 export class MenuService {
@@ -13,34 +15,63 @@ export class MenuService {
     return moduleStatus('menu', 'Categories, menu items, availability, images, nutrition, allergens, and publication settings.');
   }
 
-  createCategory(body: CreateMenuCategoryDto) {
+  async createCategory(body: CreateMenuCategoryDto, user: CurrentUser) {
+    const restaurantId = body.restaurantId ?? (await getRestaurantIdForUser(this.prisma, user));
+    if (!restaurantId) throw new BadRequestException('Restaurant ID is required.');
+
+    const slug = body.slug ?? toSlug(body.name);
+
+    // Check if a category with the same slug already exists for this restaurant
+    const existing = await this.prisma.menuCategory.findUnique({
+      where: {
+        restaurantId_slug: {
+          restaurantId,
+          slug,
+        },
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     return this.prisma.menuCategory.create({
       data: {
-        restaurantId: body.restaurantId,
+        restaurantId,
         name: body.name,
-        slug: body.slug ?? toSlug(body.name),
+        slug,
       },
     });
   }
 
-  listCategories() {
+  async listCategories(user: CurrentUser) {
+    const restaurantId = await getRestaurantIdForUser(this.prisma, user);
+    const where = restaurantId ? { restaurantId } : {};
+
     return this.prisma.menuCategory.findMany({
+      where,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { items: true },
     });
   }
 
-  createItem(body: CreateMenuItemDto) {
+  async createItem(body: CreateMenuItemDto, user: CurrentUser) {
+    const restaurantId = body.restaurantId ?? (await getRestaurantIdForUser(this.prisma, user));
+    if (!restaurantId) throw new BadRequestException('Restaurant ID is required.');
+
+    // Ensure categoryId is valid CUID or null
+    const categoryId = body.categoryId && body.categoryId.trim() !== '' ? body.categoryId : null;
+
     return this.prisma.menuItem.create({
       data: {
-        restaurantId: body.restaurantId,
-        categoryId: body.categoryId,
+        restaurantId,
+        categoryId,
         name: body.name,
         description: body.description,
         price: body.price,
         isLive: body.isLive ?? false,
         isHighlighted: body.isHighlighted ?? false,
-        status: body.isLive ? 'AVAILABLE' : 'DRAFT',
+        status: body.status ?? (body.isLive ? 'AVAILABLE' : 'DRAFT'),
         tags: body.tags ?? [],
         allergens: body.allergens ?? [],
       },
@@ -48,18 +79,24 @@ export class MenuService {
     });
   }
 
-  listItems() {
+  async listItems(user: CurrentUser) {
+    const restaurantId = await getRestaurantIdForUser(this.prisma, user);
+    const where = restaurantId ? { restaurantId } : {};
+
     return this.prisma.menuItem.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: { category: true, media: true },
     });
   }
 
   updateItem(id: string, body: Partial<CreateMenuItemDto>) {
+    const categoryId = body.categoryId === "" ? null : body.categoryId;
+    
     return this.prisma.menuItem.update({
       where: { id },
       data: {
-        categoryId: body.categoryId,
+        categoryId,
         name: body.name,
         description: body.description,
         price: body.price,

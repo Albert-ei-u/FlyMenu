@@ -1,10 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { MenuItemStatus } from '@prisma/client';
 
 export class CreateMenuItemDto {
-  @ApiProperty({ example: 'cuid1234restaurant', description: 'Associated restaurant ID.' })
+  @ApiPropertyOptional({ example: 'cuid1234restaurant', description: 'Associated restaurant ID.' })
+  @IsOptional()
   @IsString()
-  restaurantId!: string;
+  restaurantId?: string;
 
   @ApiPropertyOptional({ example: 'cuid1234category', description: 'Optional menu category ID.' })
   @IsOptional()
@@ -23,6 +25,11 @@ export class CreateMenuItemDto {
   @ApiProperty({ example: 12.99, description: 'Price of the menu item.' })
   @IsNumber()
   price!: number;
+
+  @ApiPropertyOptional({ example: 'AVAILABLE', enum: MenuItemStatus, description: 'Manual status of the menu item.' })
+  @IsOptional()
+  @IsEnum(MenuItemStatus)
+  status?: MenuItemStatus;
 
   @ApiPropertyOptional({ example: true, description: 'Whether the item is currently visible/orderable on the menu.' })
   @IsOptional()

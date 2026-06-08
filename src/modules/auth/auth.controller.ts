@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { SignupDto } from './dto/signup.dto';
+import { RestaurantSignupDto } from './dto/restaurant-signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('Auth')
@@ -30,6 +31,17 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'An account with this email already exists.' })
   signup(@Body() body: SignupDto) {
     return this.authService.signup(body);
+  }
+
+  @Post('restaurant/signup')
+  @ApiOperation({
+    summary: 'Restaurant Admin Sign up',
+    description: 'Register a new restaurant admin account and create a draft restaurant.',
+  })
+  @ApiResponse({ status: 201, description: 'Account created. Verification code sent to email.' })
+  @ApiResponse({ status: 409, description: 'An account with this email already exists.' })
+  restaurantSignup(@Body() body: RestaurantSignupDto) {
+    return this.authService.restaurantSignup(body);
   }
 
   @Post('verify-email')

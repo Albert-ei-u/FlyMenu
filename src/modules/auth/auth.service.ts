@@ -7,18 +7,15 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { moduleStatus } from '../../common/module-status';
-import {
-  createOpaqueToken,
-  createOtpCode,
-  createSignedToken,
-  hashToken,
-} from '../../common/token';
+import * as path from 'path';
+import { hashToken, createOpaqueToken, createOtpCode, createSignedToken } from '../../common/token';
 import { hashPassword, verifyPassword } from '../../common/password';
 import { EmailService } from '../../integrations/email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { SignupDto } from './dto/signup.dto';
+import { RestaurantSignupDto } from './dto/restaurant-signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Injectable()
@@ -60,6 +57,45 @@ export class AuthService {
 
     return {
       message: 'Account created. Please check your email for a 6-digit verification code.',
+      email: user.email,
+    };
+  }
+
+  async restaurantSignup(body: RestaurantSignupDto) {
+    const existingUser = await this.prisma.user.findUnique({ where: { email: body.email } });
+    if (existingUser) {
+      throw new ConflictException('An account with this email already exists.');
+    }
+
+    // Convert restaurant name to slug
+    const slug = body.restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: body.email,
+        fullName: body.fullName,
+        passwordHash: await hashPassword(body.password),
+        role: 'RESTAURANT_OWNER',
+        ownedRestaurants: {
+          create: {
+            name: body.restaurantName,
+            slug,
+            cuisine: 'Other', // default value
+            status: 'DRAFT',
+          },
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+      },
+    });
+
+    await this.sendVerificationCode(user.id, user.email, user.fullName);
+
+    return {
+      message: 'Restaurant account created. Please check your email for a 6-digit verification code.',
       email: user.email,
     };
   }
@@ -116,12 +152,21 @@ export class AuthService {
   }
 
   async login(body: LoginDto) {
+    console.log(`Login attempt for email: ${body.email}`);
     const user = await this.prisma.user.findUnique({ where: { email: body.email } });
-    if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
+    if (!user) {
+      console.log(`User not found: ${body.email}`);
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    const isPasswordValid = await verifyPassword(body.password, user.passwordHash);
+    if (!isPasswordValid) {
+      console.log(`Invalid password for user: ${body.email}`);
       throw new UnauthorizedException('Invalid email or password.');
     }
 
     if (!user.emailVerified) {
+      console.log(`Email not verified for user: ${body.email}`);
       throw new UnauthorizedException(
         'Please verify your email before logging in. Check your inbox for the 6-digit code.',
       );
@@ -159,7 +204,7 @@ export class AuthService {
     }
 
     const secret = this.config.get<string>('JWT_SECRET', 'dev-secret');
-    const rawToken = createOpaqueToken();
+    const rawToken = createOtpCode();
     const ttlMinutes = this.config.get<number>('PASSWORD_RESET_TOKEN_TTL_MINUTES', 30);
     const expiresAt = new Date(Date.now() + ttlMinutes * 60_000);
 
@@ -179,6 +224,7 @@ export class AuthService {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:#0f172a;padding:32px 40px;text-align:center;">
+            <img src="cid:flymenu-logo" alt="FlyMenu Logo" width="44" height="44" style="margin:0 auto 12px;display:block;" />
             <h1 style="color:#f97316;margin:0;font-size:28px;letter-spacing:-1px;">FlyMenu</h1>
             <p style="color:#94a3b8;margin:8px 0 0;font-size:14px;">Restaurant Management Platform</p>
           </td>
@@ -186,13 +232,13 @@ export class AuthService {
         <tr>
           <td style="padding:40px;">
             <h2 style="color:#0f172a;margin:0 0 16px;font-size:22px;">Password Reset Request</h2>
-            <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 24px;">
+            <p style="color:#475569;font-size:15px;line-height:1.6;margin:0 0 28px;">
               We received a request to reset the password for your FlyMenu account.
-              Use the token below to complete the reset. It expires in <strong>${ttlMinutes} minutes</strong>.
+              Enter the code below to complete the reset. It expires in <strong>${ttlMinutes} minutes</strong>.
             </p>
-            <div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:8px;padding:20px;text-align:center;margin:0 0 24px;">
-              <p style="color:#64748b;font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px;">Your Reset Token</p>
-              <code style="color:#0f172a;font-size:22px;font-weight:bold;letter-spacing:3px;word-break:break-all;">${rawToken}</code>
+            <div style="background:#f8fafc;border:2px solid #f97316;border-radius:12px;padding:28px;text-align:center;margin:0 0 28px;">
+              <p style="color:#64748b;font-size:12px;margin:0 0 10px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Your Reset Code</p>
+              <div style="color:#0f172a;font-size:40px;font-weight:800;letter-spacing:10px;font-family:monospace;">${rawToken}</div>
             </div>
             <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin:0;">
               If you did not request a password reset, you can safely ignore this email.
@@ -217,6 +263,11 @@ export class AuthService {
       to: email,
       subject: 'Reset your FlyMenu password',
       html: resetHtml,
+      attachments: [{
+        filename: 'flymenu-logo.png',
+        path: path.join(process.cwd(), 'src/assets/flymenu-logo.png'),
+        cid: 'flymenu-logo'
+      }]
     });
     return { message: 'If that email exists, a reset link has been sent.' };
   }
@@ -271,6 +322,7 @@ export class AuthService {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:#0f172a;padding:32px 40px;text-align:center;">
+            <img src="cid:flymenu-logo" alt="FlyMenu Logo" width="44" height="44" style="margin:0 auto 12px;display:block;" />
             <h1 style="color:#f97316;margin:0;font-size:28px;letter-spacing:-1px;">FlyMenu</h1>
             <p style="color:#94a3b8;margin:8px 0 0;font-size:14px;">Restaurant Management Platform</p>
           </td>
@@ -308,6 +360,11 @@ export class AuthService {
       to: email,
       subject: `${code} is your FlyMenu verification code`,
       html,
+      attachments: [{
+        filename: 'flymenu-logo.png',
+        path: path.join(process.cwd(), 'src/assets/flymenu-logo.png'),
+        cid: 'flymenu-logo'
+      }]
     });
   }
 

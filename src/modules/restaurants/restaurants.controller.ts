@@ -1,8 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { SearchRestaurantsDto } from './dto/search-restaurants.dto';
+import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { RestaurantsService } from './restaurants.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Restaurants')
 @Controller('restaurants')
@@ -17,6 +21,30 @@ export class RestaurantsController {
   @ApiQuery({ name: 'priceRange', required: false, description: 'Filter by price range (e.g. "$$$ Expensive").' })
   findAll(@Query() query: SearchRestaurantsDto) {
     return this.restaurantsService.findAll(query);
+  }
+
+  @Get('profile')
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get current user restaurant profile', description: 'Fetch the restaurant profile for the authenticated user.' })
+  getProfile(@CurrentUser() user: CurrentUserType) {
+    return this.restaurantsService.findForUser(user);
+  }
+
+  @Patch('profile')
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update restaurant profile' })
+  updateProfile(@CurrentUser() user: CurrentUserType, @Body() body: UpdateRestaurantDto) {
+    return this.restaurantsService.updateProfile(user, body);
+  }
+
+  @Post('request-approval')
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Request restaurant approval' })
+  requestApproval(@CurrentUser() user: CurrentUserType) {
+    return this.restaurantsService.requestApproval(user);
   }
 
   @Get('featured')

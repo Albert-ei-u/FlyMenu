@@ -1,10 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateTableDto } from './dto/create-table.dto';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { TablesService } from './tables.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Tables')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('tables')
 export class TablesController {
   constructor(private readonly tablesService: TablesService) {}
@@ -12,8 +17,8 @@ export class TablesController {
   @Get()
   @ApiOperation({ summary: 'List tables', description: 'Retrieve all tables, optionally filtered by restaurant.' })
   @ApiQuery({ name: 'restaurantId', required: false, description: 'Optional restaurant ID filter.' })
-  findAll(@Query('restaurantId') restaurantId?: string) {
-    return this.tablesService.findAll(restaurantId);
+  findAll(@CurrentUser() user: CurrentUserType, @Query('restaurantId') restaurantId?: string) {
+    return this.tablesService.findAll(user, restaurantId);
   }
 
   @Post()

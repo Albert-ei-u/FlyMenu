@@ -1,17 +1,22 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateClientDto } from './dto/create-client.dto';
 import { ClientsService } from './clients.service';
+import { AuthGuard } from '../../common/auth/auth.guard';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
+import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
 
 @ApiTags('Clients')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard)
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get()
   @ApiOperation({ summary: 'List all clients', description: 'Retrieve all restaurant clients with loyalty tiers and spend stats.' })
-  findAll() {
-    return this.clientsService.findAll();
+  findAll(@CurrentUser() user: CurrentUserType) {
+    return this.clientsService.findAll(user);
   }
 
   @Post()
