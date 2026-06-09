@@ -6,4 +6,3 @@ import { RealtimeGateway } from './realtime.gateway';
   exports: [RealtimeGateway],
 })
 export class RealtimeModule {}
-
