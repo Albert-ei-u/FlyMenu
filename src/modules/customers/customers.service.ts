@@ -17,7 +17,6 @@ export class CustomersService {
     });
   }
 
-  
   findOne(id: string) {
     return this.prisma.customerProfile.findUnique({
       where: { id },
