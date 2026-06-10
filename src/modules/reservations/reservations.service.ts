@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { moduleStatus } from '../../common/module-status';
 import { createConfirmationNumber } from '../../common/order-number';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { CurrentUser } from '../../common/auth/current-user';
@@ -9,21 +10,34 @@ import { getRestaurantIdForUser } from '../../common/auth/restaurant-id';
 
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   status() {
     return moduleStatus('reservations', 'Bookings, table selection, party size, special requests, confirmation numbers, and QR codes.');
   }
 
   async findAll(user?: CurrentUser) {
-    const restaurantId = user ? await getRestaurantIdForUser(this.prisma, user) : undefined;
-    const where = restaurantId ? { restaurantId } : {};
+    let where: any = {};
+
+    if (user) {
+      if (user.role === 'RESTAURANT_OWNER') {
+        const restaurantId = await getRestaurantIdForUser(this.prisma, user);
+        if (restaurantId) {
+          where.restaurantId = restaurantId;
+        }
+      } else if (user.role === 'CUSTOMER') {
+        where.customerId = user.sub;
+      }
+    }
 
     return this.prisma.reservation.findMany({
       where,
       orderBy: { reservationDate: 'desc' },
       include: {
-        restaurant: { select: { id: true, name: true } },
+        restaurant: { select: { id: true, name: true, slug: true, media: true } },
         table: { select: { id: true, code: true } },
       },
     });
@@ -94,14 +108,15 @@ export class ReservationsService {
     };
   }
 
-  create(body: CreateReservationDto) {
-    return this.prisma.reservation.create({
+  async create(body: CreateReservationDto, user?: CurrentUser) {
+    const reservation = await this.prisma.reservation.create({
       data: {
         confirmationNumber: createConfirmationNumber(),
         restaurantId: body.restaurantId,
+        customerId: user?.sub,
         tableId: body.tableId,
-        guestName: body.guestName,
-        contactNumber: body.contactNumber,
+        guestName: body.guestName || user?.fullName || 'Guest',
+        contactNumber: body.contactNumber || user?.phone,
         partySize: body.partySize,
         reservationDate: new Date(body.reservationDate),
         reservationTime: body.reservationTime,
@@ -113,6 +128,15 @@ export class ReservationsService {
       },
       include: { restaurant: true, table: true },
     });
+
+    this.realtime.emitNotification({
+      type: 'RESERVATION',
+      title: 'New Reservation',
+      message: `${reservation.guestName} has booked a table for ${reservation.partySize} persons.`,
+      restaurantId: reservation.restaurantId,
+    });
+
+    return reservation;
   }
 
   findOne(id: string) {

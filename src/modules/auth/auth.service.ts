@@ -152,21 +152,12 @@ export class AuthService {
   }
 
   async login(body: LoginDto) {
-    console.log(`Login attempt for email: ${body.email}`);
     const user = await this.prisma.user.findUnique({ where: { email: body.email } });
-    if (!user) {
-      console.log(`User not found: ${body.email}`);
-      throw new UnauthorizedException('Invalid email or password.');
-    }
-
-    const isPasswordValid = await verifyPassword(body.password, user.passwordHash);
-    if (!isPasswordValid) {
-      console.log(`Invalid password for user: ${body.email}`);
+    if (!user || !(await verifyPassword(body.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
     if (!user.emailVerified) {
-      console.log(`Email not verified for user: ${body.email}`);
       throw new UnauthorizedException(
         'Please verify your email before logging in. Check your inbox for the 6-digit code.',
       );

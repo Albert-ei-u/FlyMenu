@@ -33,9 +33,11 @@ export class ReservationsController {
   }
 
   @Post()
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create booking', description: 'Create a new table reservation. Returns confirmation number and booking details.' })
-  create(@Body() body: CreateReservationDto) {
-    return this.reservationsService.create(body);
+  create(@Body() body: CreateReservationDto, @CurrentUser() user: CurrentUserType) {
+    return this.reservationsService.create(body, user);
   }
 
   @Get(':id')

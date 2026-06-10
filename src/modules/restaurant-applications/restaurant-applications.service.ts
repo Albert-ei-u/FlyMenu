@@ -1,23 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { moduleStatus } from '../../common/module-status';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RealtimeGateway } from '../../realtime/realtime.gateway';
 import { AddApplicationDocumentDto } from './dto/add-application-document.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ReviewApplicationDto } from './dto/review-application.dto';
 
 @Injectable()
 export class RestaurantApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   status() {
     return moduleStatus('restaurant-applications', 'Partner onboarding, document review, approval, rejection, and admin notes.');
   }
 
-  create(body: CreateApplicationDto) {
-    return this.prisma.restaurantApplication.create({
+  async create(body: CreateApplicationDto) {
+    const application = await this.prisma.restaurantApplication.create({
       data: body,
       include: { documents: true },
     });
+
+    this.realtime.emitNotification({
+      type: 'NEW_APPLICATION',
+      title: 'New Partner Application',
+      message: `A new application from ${body.restaurantName} has been submitted.`,
+      applicationId: application.id,
+    });
+
+    return application;
   }
 
   findAll() {

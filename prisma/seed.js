@@ -77,7 +77,6 @@ async function main() {
       name: 'The Obsidian Grill',
       slug: 'the-obsidian-grill',
       businessType: 'Restaurant',
-      
       cuisine: 'Modern Fusion Cuisine',
       description: 'A premium dining destination focused on volcanic-stone grilled meats and elevated cocktails.',
       shortDescription: 'Modern fusion and artisan cocktails.',

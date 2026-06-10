@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/auth/current-user.decorator';
 import { CurrentUser as CurrentUserType } from '../../common/auth/current-user';
@@ -49,6 +49,13 @@ export class MenuController {
   @ApiParam({ name: 'id', description: 'Menu item ID (CUID).' })
   updateItem(@Param('id') id: string, @Body() body: Partial<CreateMenuItemDto>) {
     return this.menuService.updateItem(id, body);
+  }
+
+  @Delete('items/:id')
+  @ApiOperation({ summary: 'Delete menu item', description: 'Permanently remove a menu item and its associated media.' })
+  @ApiParam({ name: 'id', description: 'Menu item ID (CUID).' })
+  deleteItem(@Param('id') id: string) {
+    return this.menuService.deleteItem(id);
   }
 }
 

@@ -102,11 +102,22 @@ export class MenuService {
         price: body.price,
         isLive: body.isLive,
         isHighlighted: body.isHighlighted,
-        status: body.isLive === undefined ? undefined : body.isLive ? 'AVAILABLE' : 'UNAVAILABLE',
+        status: body.status ?? (body.isLive === undefined ? undefined : body.isLive ? 'AVAILABLE' : 'UNAVAILABLE'),
         tags: body.tags,
         allergens: body.allergens,
       },
       include: { category: true, media: true },
+    });
+  }
+
+  async deleteItem(id: string) {
+    // Delete associated media first if any (cascading might handle it depending on schema, but let's be safe)
+    await this.prisma.mediaAsset.deleteMany({
+      where: { menuItemId: id },
+    });
+
+    return this.prisma.menuItem.delete({
+      where: { id },
     });
   }
 }

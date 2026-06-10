@@ -29,8 +29,8 @@ export class OrdersController {
 
   @Post()
   @ApiOperation({ summary: 'Place order', description: 'Create a new order with line items. Automatically generates an order number and PENDING tracking event.' })
-  create(@Body() body: CreateOrderDto) {
-    return this.ordersService.create(body);
+  create(@Body() body: CreateOrderDto, @CurrentUser() user: CurrentUserType) {
+    return this.ordersService.create(body, user);
   }
 
   @Get(':id')
