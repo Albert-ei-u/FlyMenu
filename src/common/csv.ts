@@ -6,7 +6,7 @@ export function toCsv(rows: Record<string, unknown>[]) {
 
 
   const headers = Object.keys(rows[0]);
-
+  
   const escape = (value: unknown) => {
     const text = value === null || value === undefined ? '' : String(value);
     return `"${text.replace(/"/g, '""')}"`;
@@ -15,5 +15,4 @@ export function toCsv(rows: Record<string, unknown>[]) {
 
   return [headers.join(','), ...rows.map((row) => headers.map((header) => escape(row[header])).join(','))].join('\n');
 }
-
 
