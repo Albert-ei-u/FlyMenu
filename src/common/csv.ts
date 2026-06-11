@@ -9,9 +9,8 @@ export function toCsv(rows: Record<string, unknown>[]) {
 
   const escape = (value: unknown) => {
     const text = value === null || value === undefined ? '' : String(value);
-    
     return `"${text.replace(/"/g, '""')}"`;
-
+    
   };
 
 
