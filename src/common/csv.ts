@@ -1,6 +1,6 @@
 export function toCsv(rows: Record<string, unknown>[]) 
 {
-  if (rows.length == 0) {
+  if (rows.length === 0) {
     return '';
   }
 
