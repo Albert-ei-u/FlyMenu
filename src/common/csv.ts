@@ -10,9 +10,8 @@ export function toCsv(rows: Record<string, unknown>[])
 
   const escape = (value: unknown) => {
     const text = value === null || value === undefined ? '' : String(value);
-    
     return `"${text.replace(/"/g, '""')}"`;
-
+    
   };
 
   return [headers.join(','), ...rows.map((row) => headers.map((header) => escape(row[header])).join(','))].join('\n');
