@@ -4,7 +4,7 @@ export function toCsv(rows: Record<string, unknown>[])
     return '';
   }
 
-
+  
 
   const headers = Object.keys(rows[0]);
 
