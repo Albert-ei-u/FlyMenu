@@ -1,5 +1,4 @@
-export function toCsv(rows: Record<string, unknown>[]) 
-{
+export function toCsv(rows: Record<string, unknown>[]) {
   if (rows.length === 0) {
     return '';
   }
